@@ -13,7 +13,7 @@ If the user does not have `ws.sh` then the workspace.sh file simply is a useful,
 ## Installation
 Right now, this only supports bash on macos although it may well run other places. Pull requests welcome!
 1) Clone this repository somewhere (ex: `${HOME}/local/ws.sh`).
-2) Source `init.bash` in your `~/.profile` (ex: `source ${HOME}/local/ws.sh/init.bash`)
+2) Source `init.bash` in your `~/.profile`. Be sure to use a full path so ws.sh knows where it's installed. (ex: `source ${HOME}/local/ws.sh/init.bash`)
 3) (optionally) modify your $PS1 to read the `$workspace` environment variable so you can see at a glace which workspace each shell is in.
 
 
