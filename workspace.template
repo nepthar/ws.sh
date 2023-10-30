@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-workspace="ws"
+workspace="{NAME}"
 
 # Shell Workspace File
 # This is designed to be used with github.com/nepthar/ws.sh for "magic",
 # it can be sourced from bash, or it can be executed directly.
 
 # Variables & Functions
-ws.say-hello() {
+{NAME}.say-hello() {
   echo "Hello from $workspace in $PWD"
 }
 

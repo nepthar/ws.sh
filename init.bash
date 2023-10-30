@@ -1,8 +1,26 @@
-# Workspace Name
+# init.bash - ws.sh setup for bash
+
+# Ensure that this is being sourced by bash, rather than being run
+# directly as a script or otherwise in a different shell.
+if [[ "$0" != "-bash" ]]; then
+  echo "ws.sh: init.bash must be sourced by bash rather than run"
+  exit 1
+fi
+
+# Use the path of this file to determine where ws.sh is installed to.
+if [[ $BASH_SOURCE == *"/ws.sh/init.bash" ]]; then
+  ws_root="${BASH_SOURCE%%/init.bash}"
+else
+  echo "ws.sh: Unable to figure out where ws.sh is located. Please" \
+    "provide a full path when sourcing init.bash." \
+    "Got: \"$BASH_SOURCE\". Workspaces cannot be set up." >&2
+  return 1
+fi
+
+# Pass the workspace name to subprocesses
 export workspace
 
 # Configuration
-ws_root="${HOME}/local/ws.sh"
 ws_spaces="${ws_root}/known"
 ws_home=
 ws_funcs=()
@@ -22,7 +40,7 @@ ws.info()
 }
 
 ## ws.ls
-## List workspaces that ws knowns about
+## List known workspaces
 ws.ls()
 {
   echo "Spaces in ${ws_spaces}:"
@@ -116,7 +134,7 @@ ws.enter()
   alias ,=_ws.active
   complete -W "${ws_funcs[*]}" ,
 
-  # For debugging:
+  # debug:
   # echo "ws_file=$ws_file, workspace=$workspace, ws_funcs=(${ws_funcs[@]})" >&2
 
   ,,()
@@ -227,24 +245,8 @@ _ws.resolve_file()
   return 1
 }
 
-_ws.dmsg() {
-  if [[ ! -z $SHELL_DEBUG ]]; then
-    echo "ws debug:" $@ >&2
-  fi
-}
-
-_ws.emsg() {
-  echo "ws error:" $@ >&2
-}
-
 _ws.template() {
-  printf "%s\n" \
-    "# Shell workspace file - scripts and variables for this workspace or project" \
-    "# Use with github.com/nepthar/wksp for \"magic\" or just \`source\`" \
-    "workspace=\"$1\" # This must be set" \
-    "" \
-    "# Other variables or functions" \
-    "# $1.run-tests() ..."
+  sed -e "s/{NAME}/$1/g" "${ws_root}/workspace.template"
 }
 
 alias ,=_ws.inactive
