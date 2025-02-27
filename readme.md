@@ -1,5 +1,6 @@
 ws.sh - Shell Workspaces
-------------------------
+========================
+
 Workspaces keep your projects organized and easily accessable from the shell as well as provide a place to put commonly used commands and variables. The comma (,) is used as a new command to access workspace functionality. This functionality all lives in a `workspace.sh` file at the root of the project. Some examples of projects that could use a workspace are rails apps and docker-compose projects.
 
 When one "enters" a workspace, the `workspace.sh` file is sourced and the functions within it can be dispatched (with tab completion) with the command command.

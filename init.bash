@@ -1,11 +1,25 @@
 # init.bash - ws.sh setup for bash
 
-# Ensure that this is being sourced by bash, rather than being run
-# directly as a script or otherwise in a different shell.
-if [[ "$0" != "-bash" ]]; then
-  echo "ws.sh: init.bash must be sourced by bash rather than run"
+# Check if running in bash and being sourced
+if [[ -z "$BASH_VERSION" ]]; then
+  echo "ws.sh: init.bash is for bash only" >&2
+  return 1
+fi
+
+(return 0 2>/dev/null) && sourced=true || sourced=false
+
+if [[ "$sourced" == "false" ]]; then
+  echo "ws.sh: init.bash must be sourced rather than run" >&2
   exit 1
 fi
+
+
+# # Ensure that this is being sourced by bash, rather than being run
+# # directly as a script or otherwise in a different shell.
+# if (return 0 2>/dev/null) [[ "$0" != "-bash" ]]; then
+#   echo "ws.sh: init.bash must be sourced by bash rather than run"
+#   return
+# fi
 
 # Use the path of this file to determine where ws.sh is installed to.
 if [[ $BASH_SOURCE == *"/ws.sh/init.bash" ]]; then
@@ -25,18 +39,29 @@ ws_spaces="${ws_root}/known"
 ws_home=
 ws_funcs=()
 ws_file=
-ws_pre=
+ws_prefix=
 
 ## ws.info
 ## Dumps information about the workspace state
 ws.info()
 {
-  echo "ws name:  $workspace"
-  echo "ws_root:  $ws_root"
-  echo "ws_home:  $ws_home"
-  echo "ws_funcs: (${ws_funcs[@]})"
-  echo "ws_file:  $ws_file"
-  echo "ws_pre:   $ws_pre"
+  echo "ws name:   $workspace"
+  echo "ws_root:   $ws_root"
+  echo "ws_home:   $ws_home"
+  echo "ws_funcs:  (${ws_funcs[@]})"
+  echo "ws_file:   $ws_file"
+  echo "ws_prefix: $ws_prefix"
+}
+
+## Displays the help strings for all available commands
+ws.help() {
+  echo "$workspace workspace Commands:"
+  grep -E "^(##|${ws_prefix}\.)" "$ws_file" | while read -r line; do
+    case "$line" in
+      '##'* ) help="${line:3}" ;;
+      "${ws_prefix}"* ) printf " - %-20s %s\n" "${line%%\(*}" "$help" ;;
+    esac
+  done
 }
 
 ## ws.ls
@@ -120,15 +145,17 @@ ws.enter()
     return 1
   fi
 
+  ws_prefix=${ws_prefix:-$workspace}
+
   # Sourcing the file & running init seems to have gone OK.
   # Generate the list of commands for tab complete
-  ws_prefix=${ws_prefix:-$workspace}
   ws_funcs=($(
     for funcname in $(declare -F | cut -c12- | grep "^${ws_prefix}\."); do
       funcname=${funcname#${ws_prefix}.}
       echo ${funcname#"root."}
     done
   ))
+
 
   # Project entry mapping & tab completion
   alias ,=_ws.active
@@ -137,13 +164,13 @@ ws.enter()
   # debug:
   # echo "ws_file=$ws_file, workspace=$workspace, ws_funcs=(${ws_funcs[@]})" >&2
 
-  ,,()
+  ws.refresh()
   {
     unset workspace
     if ws.enter "$ws_file"; then
-      echo "Re-sourced ${ws_file}"
+      echo "Refreshed workspace from ${ws_file}"
     else
-      echo "Failed. Project may be in a broken state"
+      echo "Failed. Workspace is likely in a broken state, close the terminal"
       return 1
     fi
   }
@@ -171,6 +198,7 @@ _ws.active()
 
   local dot_command="${ws_prefix}.${cmd}"
 
+  # Run without arguments, just cd to the root of the workspace
   if [[ -z $cmd ]]; then
     cd "$ws_home"
     return
@@ -180,6 +208,8 @@ _ws.active()
 
   if isfunc $dot_command; then
     $dot_command "$@"
+  elif [[ "$cmd" == "help" ]]; then
+    ws.help
   else
     echo "$cmd not found"
     return 1
@@ -235,6 +265,11 @@ _ws.resolve_file()
     return $?
   fi
 
+  # See if it's a literal workspace file that exists
+  if [[ "$1" == *"workspace.sh" ]]; then
+    readlink -f "$1" && return 0
+  fi
+
   # See if it's a known workspace
   readlink -f "${ws_spaces}/${1}.ws" && return 0
 
@@ -252,4 +287,3 @@ _ws.template() {
 alias ,=_ws.inactive
 complete -F _ws.tab_comp_inactive ,
 mkdir -p "$ws_root"
-
