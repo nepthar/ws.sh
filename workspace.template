@@ -2,12 +2,34 @@
 workspace="{NAME}"
 
 # Shell Workspace File
+# ====================
 # This is designed to be used with github.com/nepthar/ws.sh for "magic",
 # it can be sourced from bash, or it can be executed directly.
 
-# Variables & Functions
+# Variables & "Entry" commands
+# ----------------------------
+# Since this is sourced, any variables or commands
+# defined here will execute when entering the workspace or running this file.
+# export my_dev_key="1234567890"
+
+
+# Functions
+# ---------
+# Any functions deinfed here will be available in the workdspace
+
+## This is the help string for the say-hello function. It starts with two hashes.
 {NAME}.say-hello() {
   echo "Hello from $workspace in $PWD"
+}
+
+help() {
+  echo "Available commands:" >&2
+  grep -E "^(##'{NAME}'.)" "$0" | while read -r line; do
+    case "$line" in
+      '##'* ) help="${line:3}" ;;
+      '{NAME}'* ) printf " - %-20s %s\n" "${line%%\(*}" "$help" >&2 ;;
+    esac
+  done
 }
 
 # Run a command if this is being executed instead of sourced.
@@ -15,5 +37,10 @@ if [[ "$0" == *workspace.sh ]]; then
   funcname="${workspace}.${1}"
   shift 1
   cd $(dirname $0)
-  $funcname "$@"
+  if type -t "$funcname" &>/dev/null; then
+    $funcname "$@"
+  else
+    echo "Command not found: $funcname" >&2
+    help
+  fi
 fi
